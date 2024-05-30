@@ -8,29 +8,30 @@ from torchvision import transforms
 
 from tools.config import TEST_SOTS_ROOT, OHAZE_ROOT
 from tools.utils import AvgMeter, check_mkdir, sliding_forward
-from model import DM2FNet, DM2FNet_woPhy
+from model import DM2FNet, DM2FNet_woPhy, DM2FNet_woPhy_loss_weight_x0, DM2FNet_woPhy_inference_weight_x0
 from datasets import SotsDataset, OHazeDataset
 from torch.utils.data import DataLoader
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from tqdm import tqdm
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 
 torch.manual_seed(2018)
 torch.cuda.set_device(0)
 
 ckpt_path = './ckpt'
-exp_name = 'RESIDE_ITS'
-# exp_name = 'O-Haze'
+# exp_name = 'RESIDE_ITS'
+exp_name = 'ohaze_x1'
 
 args = {
     # 'snapshot': 'iter_40000_loss_0.01230_lr_0.000000',
-    'snapshot': 'iter_10_loss_0.12335_lr_0.000117',
+    # 'snapshot': 'iter_16000_loss_0.05293_lr_0.000047',
+    'snapshot': 'iter_20000_loss_0.05122_lr_0.000000',
 }
 
 to_test = {
-    'SOTS': TEST_SOTS_ROOT,
-    # 'O-Haze': OHAZE_ROOT,
+    # 'SOTS': TEST_SOTS_ROOT,
+    'O-Haze': OHAZE_ROOT,
 }
 
 to_pil = transforms.ToPILImage()
@@ -45,9 +46,9 @@ def main():
                 net = DM2FNet().cuda()
                 dataset = SotsDataset(root)
             elif 'O-Haze' in name:
-                net = DM2FNet_woPhy().cuda()
-                # dataset = OHazeDataset(root, 'test')
-                dataset = OHazeDataset(root, '')
+                net = DM2FNet_woPhy_inference_weight_x0().cuda()
+                dataset = OHazeDataset(root, 'val')
+                # dataset = OHazeDataset(root, '')
             else:
                 raise NotImplementedError
 

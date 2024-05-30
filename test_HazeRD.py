@@ -6,31 +6,40 @@ import torch
 from torch import nn
 from torchvision import transforms
 
-from tools.config import TEST_SOTS_ROOT, OHAZE_ROOT
+from tools.config import TEST_SOTS_ROOT, OHAZE_ROOT, HazeRD_ROOT
 from tools.utils import AvgMeter, check_mkdir, sliding_forward
-from model import DM2FNet, DM2FNet_woPhy
+from model import DM2FNet, DM2FNet_woPhy, DM2FNet_woPhy_loss_weight_x0, DM2FNet_woPhy_inference_weight_x0
+from model import DM2FNet_woPhy_inference_weight_x0, DM2FNet_woPhy_loss_weight_x0
+
 from datasets import SotsDataset, OHazeDataset
 from torch.utils.data import DataLoader
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from tqdm import tqdm
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 torch.manual_seed(2018)
 torch.cuda.set_device(0)
 
 ckpt_path = './ckpt'
-exp_name = 'RESIDE_ITS'
-# exp_name = 'O-Haze'
+# exp_name = 'RESIDE_ITS'
+# exp_name = 'ohaze_x1'
+# exp_name = 'ohaze_x0_infer'
+# exp_name = 'ohaze_x0_loss_infer'
+exp_name = 'HazeRD'
 
 args = {
-    # 'snapshot': 'iter_40000_loss_0.01230_lr_0.000000',
-    'snapshot': 'iter_10_loss_0.12335_lr_0.000117',
+    # 'snapshot': 'iter_20000_loss_0.05122_lr_0.000000',
+    # 'snapshot': 'iter_16000_loss_0.05120_lr_0.000047',
+    # 'snapshot': 'iter_18000_loss_0.04626_lr_0.000025',
+    'snapshot': 'iter_18000_loss_0.05337_lr_0.000025',
 }
 
 to_test = {
-    'SOTS': TEST_SOTS_ROOT,
+    # 'SOTS': TEST_SOTS_ROOT,
     # 'O-Haze': OHAZE_ROOT,
+    'HazeRD': HazeRD_ROOT,
 }
 
 to_pil = transforms.ToPILImage()
@@ -44,10 +53,12 @@ def main():
             if 'SOTS' in name:
                 net = DM2FNet().cuda()
                 dataset = SotsDataset(root)
-            elif 'O-Haze' in name:
+            elif 'O-Haze' in name or 'HazeRD' in name:
+                # net = DM2FNet_woPhy_loss_weight_x0().cuda()
+                # net = DM2FNet_woPhy_inference_weight_x0().cuda()
+                # net = DM2FNet_woPhy_loss_weight_x0().cuda()
                 net = DM2FNet_woPhy().cuda()
-                # dataset = OHazeDataset(root, 'test')
-                dataset = OHazeDataset(root, '')
+                dataset = OHazeDataset(root, 'val')
             else:
                 raise NotImplementedError
 
@@ -55,7 +66,8 @@ def main():
 
             if len(args['snapshot']) > 0:
                 print('load snapshot \'%s\' for testing' % args['snapshot'])
-                net.load_state_dict(torch.load(os.path.join(ckpt_path, exp_name, args['snapshot'] + '.pth')))
+                print('path: ', os.path.join(ckpt_path, exp_name, args['snapshot'] + '.pth'))
+                net.load_state_dict(torch.load(os.path.join(ckpt_path, exp_name, args['snapshot'] + '.pth'), map_location='cuda:0'))
 
             net.eval()
             dataloader = DataLoader(dataset, batch_size=1)
@@ -73,7 +85,7 @@ def main():
 
                 haze = haze.cuda()
 
-                if 'O-Haze' in name:
+                if 'O-Haze' in name or 'HazeRD' in name:
                     res = sliding_forward(net, haze).detach()
                 else:
                     res = net(haze).detach()

@@ -14,23 +14,34 @@ from torch.utils.data import DataLoader
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from tqdm import tqdm
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 torch.manual_seed(2018)
 torch.cuda.set_device(0)
 
 ckpt_path = './ckpt'
-exp_name = 'RESIDE_ITS'
-# exp_name = 'O-Haze'
+# exp_name = 'RESIDE_ITS'
+exp_name = 'ohaze_origin'
 
 args = {
     # 'snapshot': 'iter_40000_loss_0.01230_lr_0.000000',
-    'snapshot': 'iter_10_loss_0.12335_lr_0.000117',
+    # 'snapshot': 'iter_2_loss_0.10745_lr_0.000200',
+    # 'snapshot': 'iter_2000_loss_0.06045_lr_0.000182',
+    # 'snapshot': 'iter_4000_loss_0.04714_lr_0.000164',
+    # 'snapshot': 'iter_6000_loss_0.05206_lr_0.000145',
+    # 'snapshot': 'iter_8000_loss_0.05059_lr_0.000126',
+    # 'snapshot': 'iter_10000_loss_0.05185_lr_0.000107',
+    # 'snapshot': 'iter_12000_loss_0.04899_lr_0.000088',
+    # 'snapshot': 'iter_14000_loss_0.05061_lr_0.000068',
+    # 'snapshot': 'iter_16000_loss_0.04801_lr_0.000047',
+    # 'snapshot': 'iter_18000_loss_0.04683_lr_0.000025',
+    'snapshot': 'iter_20000_loss_0.04796_lr_0.000000',
 }
 
 to_test = {
-    'SOTS': TEST_SOTS_ROOT,
+    # 'SOTS': TEST_SOTS_ROOT,
     # 'O-Haze': OHAZE_ROOT,
+    'O-Haze': '/root/workplace/dataset/my_image/',
 }
 
 to_pil = transforms.ToPILImage()
@@ -46,8 +57,8 @@ def main():
                 dataset = SotsDataset(root)
             elif 'O-Haze' in name:
                 net = DM2FNet_woPhy().cuda()
-                # dataset = OHazeDataset(root, 'test')
-                dataset = OHazeDataset(root, '')
+                dataset = OHazeDataset(root, 'val')
+                # dataset = OHazeDataset(root, '')
             else:
                 raise NotImplementedError
 
@@ -55,7 +66,7 @@ def main():
 
             if len(args['snapshot']) > 0:
                 print('load snapshot \'%s\' for testing' % args['snapshot'])
-                net.load_state_dict(torch.load(os.path.join(ckpt_path, exp_name, args['snapshot'] + '.pth')))
+                net.load_state_dict(torch.load(os.path.join(ckpt_path, exp_name, args['snapshot'] + '.pth'), map_location='cuda:0'))
 
             net.eval()
             dataloader = DataLoader(dataset, batch_size=1)

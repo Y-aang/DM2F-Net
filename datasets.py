@@ -48,6 +48,7 @@ def make_dataset_ohaze(root: str, mode: str):
     img_list = []
     for img_name in os.listdir(os.path.join(root, mode, 'hazy')):
         gt_name = img_name.replace('hazy', 'GT')
+        # print("path: ", os.path.join(root, mode, 'gt', gt_name))
         assert os.path.exists(os.path.join(root, mode, 'gt', gt_name))
         img_list.append([os.path.join(root, mode, 'hazy', img_name),
                          os.path.join(root, mode, 'gt', gt_name)])
@@ -264,6 +265,8 @@ class OHazeDataset(data.Dataset):
         haze_path, gt_path = self.imgs[index]
         name = os.path.splitext(os.path.split(haze_path)[1])[0]
 
+        # print("image name: ", name)
+        
         img = Image.open(haze_path).convert('RGB')
         gt = Image.open(gt_path).convert('RGB')
 

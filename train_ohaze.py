@@ -3,6 +3,13 @@ import argparse
 import os
 import datetime
 from tqdm import tqdm
+import sys
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 
 import torch
 from torch import nn
@@ -18,6 +25,7 @@ from tools.utils import AvgMeter, check_mkdir, sliding_forward
 
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a DM2FNet')
@@ -47,10 +55,11 @@ cfgs = {
     'crop_size': 512,
 }
 
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 
 def main():
-    net = DM2FNet_woPhy().cuda().train()
-    # net = DataParallel(net)
+    net = DM2FNet_woPhy().to(device).train()
+    # net = torch.nn.DataParallel(net)
 
     optimizer = optim.Adam([
         {'params': [param for name, param in net.named_parameters()
@@ -88,7 +97,7 @@ def train(net, optimizer):
         loss_x_j1_record, loss_x_j2_record = AvgMeter(), AvgMeter()
         loss_x_j3_record, loss_x_j4_record = AvgMeter(), AvgMeter()
 
-        for data in train_loader:
+        for data in tqdm(train_loader):  
             optimizer.param_groups[0]['lr'] = 2 * cfgs['lr'] * (1 - float(curr_iter) / cfgs['iter_num']) \
                                               ** cfgs['lr_decay']
             optimizer.param_groups[1]['lr'] = cfgs['lr'] * (1 - float(curr_iter) / cfgs['iter_num']) \
@@ -98,7 +107,7 @@ def train(net, optimizer):
 
             batch_size = haze.size(0)
 
-            haze, gt = haze.cuda(), gt.cuda()
+            haze, gt = haze.to(device), gt.to(device)
 
             optimizer.zero_grad()
 
@@ -156,7 +165,7 @@ def validate(net, curr_iter, optimizer):
     with torch.no_grad():
         for data in tqdm(val_loader):
             haze, gt, _ = data
-            haze, gt = haze.cuda(), gt.cuda()
+            haze, gt = haze.to(device), gt.to(device)
 
             dehaze = sliding_forward(net, haze)
 
@@ -168,7 +177,9 @@ def validate(net, curr_iter, optimizer):
                 g = gt[i].cpu().numpy().transpose([1, 2, 0])
                 psnr = peak_signal_noise_ratio(g, r)
                 ssim = structural_similarity(g, r, data_range=1, multichannel=True,
-                                             gaussian_weights=True, sigma=1.5, use_sample_covariance=False)
+                                             gaussian_weights=True, sigma=1.5, use_sample_covariance=False
+                                             , win_size=3
+                                             )
                 psnr_record.update(psnr)
                 ssim_record.update(ssim)
 
@@ -188,18 +199,21 @@ def validate(net, curr_iter, optimizer):
 if __name__ == '__main__':
     args = parse_args()
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    # os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    
     cudnn.benchmark = True
     torch.cuda.set_device(int(args.gpus))
 
     train_dataset = OHazeDataset(OHAZE_ROOT, 'train_crop_512')
-    train_loader = DataLoader(train_dataset, batch_size=cfgs['train_batch_size'], num_workers=4,
+    # train_dataset = OHazeDataset(OHAZE_ROOT, '')
+    train_loader = DataLoader(train_dataset, batch_size=cfgs['train_batch_size'], num_workers=0,
                               shuffle=True, drop_last=True)
 
     val_dataset = OHazeDataset(OHAZE_ROOT, 'val')
+    # val_dataset = OHazeDataset(OHAZE_ROOT, '')
     val_loader = DataLoader(val_dataset, batch_size=1)
 
-    criterion = nn.L1Loss().cuda()
+    criterion = nn.L1Loss().to(device)
     log_path = os.path.join(args.ckpt_path, args.exp_name, str(datetime.datetime.now()) + '.txt')
 
     main()

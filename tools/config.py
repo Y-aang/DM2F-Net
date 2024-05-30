@@ -9,10 +9,13 @@ root = osp.dirname(osp.abspath(__file__))
 # TEST_B_ROOT = os.path.join(root, 'nature')
 
 # O-Haze
-OHAZE_ROOT = osp.abspath(osp.join(root, '../data', 'O-Haze'))
+OHAZE_ROOT = osp.abspath(osp.join(root, '../../dataset', 'OHAZY'))
 
 # RESIDE
-TRAIN_ITS_ROOT = osp.abspath(osp.join(root, '../data', 'RESIDE', 'ITS_v2'))  # ITS
-TEST_SOTS_ROOT = osp.abspath(osp.join(root, '../data', 'RESIDE', 'SOTS', 'nyuhaze500'))  # SOTS indoor
+TRAIN_ITS_ROOT = osp.abspath(osp.join(root, '../../dataset', 'RESIDE', 'ITS_v2'))  # ITS
+TEST_SOTS_ROOT = osp.abspath(osp.join(root, '../../dataset', 'RESIDE', 'SOTS', 'nyuhaze500'))  # SOTS indoor
 # TEST_SOTS_ROOT = os.path.join(root, 'SOTS', 'outdoor')  # SOTS outdoor
 # TEST_HSTS_ROOT = os.path.join(root, 'HSTS', 'synthetic')  # HSTS
+
+# HazeRD
+HazeRD_ROOT = osp.abspath(osp.join(root, '../../dataset', 'HazeRD_formal'))
